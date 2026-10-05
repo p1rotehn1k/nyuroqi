@@ -102,10 +102,10 @@ GUILD_ID = _to_int(os.getenv("GUILD_ID", ""))
 
 WATERMARK_LINES = os.getenv(
     "WATERMARK_LINES",
-    "YouTube: IGROOOCK\\nTwitch: IGROOOCK",
+    "YouTube: nyuroqi\\nTwitch: nyuroqi",
 ).replace("\\n", "\n").split("\n")
 
-WATERMARK_ANGLE = _env_int("WATERMARK_ANGLE", -30)
+WATERMARK_ANGLE = _env_int("WATERMARK_ANGLE", 30)
 WATERMARK_OPACITY = _env_int("WATERMARK_OPACITY", 170)
 WATERMARK_COLOR = _env_color("WATERMARK_COLOR", (225, 225, 225))
 WATERMARK_FONT_SCALE = _env_float("WATERMARK_FONT_SCALE", 0.032)
@@ -543,15 +543,26 @@ async def get_target_channel(channel_id: int):
 
 
 def find_tag(text: str, message: discord.Message):
+    # 1. Ищем #тег (с пробелом или без)
     if text:
-        for word in re.findall(r"#([^\s#<>]+)", text):
+        for word in re.findall(r"#\s*([^\s#<>]+)", text):
             key = word.strip().lower().strip(".,!?;:()[]{}")
             if key in TAG_MAP:
                 return key
+
+    # 2. Упоминания обычных каналов
     for channel in message.channel_mentions:
         name = (channel.name or "").lower().strip()
         if name in TAG_MAP:
             return name
+
+    # 3. Темы форумов — через <#ID>
+    for m in re.finditer(r"<#(\d+)>", text or ""):
+        cid = int(m.group(1))
+        for tag, target_id in TAG_MAP.items():
+            if target_id == cid:
+                return tag
+
     return None
 
 
